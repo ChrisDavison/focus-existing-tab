@@ -4,7 +4,13 @@
 import { Plugin, WorkspaceLeaf } from "obsidian";
 import { around } from "monkey-around";
 
-const leafPath = (leaf) => leaf.getViewState()?.state?.file;
+const viewState = (leaf) => {
+  try {
+    return leaf.getViewState();
+  } catch {
+    return undefined;
+  }
+};
 
 export default class FocusExistingTabPlugin extends Plugin {
   onload() {
@@ -23,23 +29,44 @@ export default class FocusExistingTabPlugin extends Plugin {
   }
 
   // Look only in the target's tab group, so splits can still show a note twice.
+  // Any failure falls back to Obsidian's normal behaviour.
   findExisting(target, file) {
-    if (!file || !target.parent || leafPath(target) === file.path) return null;
-    let match = null;
-    this.app.workspace.iterateAllLeaves((leaf) => {
-      if (!match && leaf !== target && leaf.parent === target.parent && leafPath(leaf) === file.path) {
-        match = leaf;
-      }
-    });
-    return match;
+    try {
+      if (typeof file?.path !== "string" || !target?.parent) return null;
+      if (viewState(target)?.state?.file === file.path) return null;
+      const type = this.app.viewRegistry?.getTypeByExtension?.(file.extension);
+      let match = null;
+      this.app.workspace.iterateAllLeaves((leaf) => {
+        if (!match && leaf !== target && leaf.parent === target.parent && this.shows(leaf, file, type)) {
+          match = leaf;
+        }
+      });
+      return match;
+    } catch (error) {
+      console.error("Focus Existing Tab:", error);
+      return null;
+    }
+  }
+
+  // True when the leaf is a file view of this file, not a linked view such as
+  // a local graph or backlinks pane that only tracks it.
+  shows(leaf, file, type) {
+    const vs = viewState(leaf);
+    if (vs?.state?.file !== file.path) return false;
+    if (type && vs.type === type) return true;
+    // Other file views of the same file, e.g. a Kanban board for a Markdown note.
+    return !leaf.isDeferred && leaf.view?.navigation === true;
   }
 
   async focus(target, existing, state) {
-    const { workspace } = this.app;
     // A fresh tab from getLeaf("tab") is still empty here; close it unseen.
-    if (target.view?.getViewType() === "empty") target.detach();
-    if (state?.active !== false) workspace.setActiveLeaf(existing, { focus: true });
-    // Reapply the requested state, e.g. a heading or block subpath.
-    if (state?.eState) existing.setEphemeralState(state.eState);
+    if (target.view?.getViewType?.() === "empty") target.detach();
+    if (state?.active !== false) this.app.workspace.setActiveLeaf(existing, { focus: true });
+    // Reapply the requested state, e.g. a heading or block subpath. A tab not
+    // shown since startup must load its view first.
+    if (state?.eState) {
+      if (existing.isDeferred) await existing.loadIfDeferred?.();
+      existing.setEphemeralState(state.eState);
+    }
   }
 }

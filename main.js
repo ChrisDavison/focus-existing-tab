@@ -61,9 +61,12 @@ function around1(obj, method, createWrapper) {
 }
 
 // src/main.js
-var leafPath = (leaf) => {
-  var _a, _b;
-  return (_b = (_a = leaf.getViewState()) == null ? void 0 : _a.state) == null ? void 0 : _b.file;
+var viewState = (leaf) => {
+  try {
+    return leaf.getViewState();
+  } catch (e) {
+    return void 0;
+  }
 };
 var FocusExistingTabPlugin = class extends import_obsidian.Plugin {
   onload() {
@@ -81,21 +84,41 @@ var FocusExistingTabPlugin = class extends import_obsidian.Plugin {
     );
   }
   // Look only in the target's tab group, so splits can still show a note twice.
+  // Any failure falls back to Obsidian's normal behaviour.
   findExisting(target, file) {
-    if (!file || !target.parent || leafPath(target) === file.path) return null;
-    let match = null;
-    this.app.workspace.iterateAllLeaves((leaf) => {
-      if (!match && leaf !== target && leaf.parent === target.parent && leafPath(leaf) === file.path) {
-        match = leaf;
-      }
-    });
-    return match;
+    var _a, _b, _c, _d;
+    try {
+      if (typeof (file == null ? void 0 : file.path) !== "string" || !(target == null ? void 0 : target.parent)) return null;
+      if (((_b = (_a = viewState(target)) == null ? void 0 : _a.state) == null ? void 0 : _b.file) === file.path) return null;
+      const type = (_d = (_c = this.app.viewRegistry) == null ? void 0 : _c.getTypeByExtension) == null ? void 0 : _d.call(_c, file.extension);
+      let match = null;
+      this.app.workspace.iterateAllLeaves((leaf) => {
+        if (!match && leaf !== target && leaf.parent === target.parent && this.shows(leaf, file, type)) {
+          match = leaf;
+        }
+      });
+      return match;
+    } catch (error) {
+      console.error("Focus Existing Tab:", error);
+      return null;
+    }
+  }
+  // True when the leaf is a file view of this file, not a linked view such as
+  // a local graph or backlinks pane that only tracks it.
+  shows(leaf, file, type) {
+    var _a, _b;
+    const vs = viewState(leaf);
+    if (((_a = vs == null ? void 0 : vs.state) == null ? void 0 : _a.file) !== file.path) return false;
+    if (type && vs.type === type) return true;
+    return !leaf.isDeferred && ((_b = leaf.view) == null ? void 0 : _b.navigation) === true;
   }
   async focus(target, existing, state) {
-    var _a;
-    const { workspace } = this.app;
-    if (((_a = target.view) == null ? void 0 : _a.getViewType()) === "empty") target.detach();
-    if ((state == null ? void 0 : state.active) !== false) workspace.setActiveLeaf(existing, { focus: true });
-    if (state == null ? void 0 : state.eState) existing.setEphemeralState(state.eState);
+    var _a, _b, _c;
+    if (((_b = (_a = target.view) == null ? void 0 : _a.getViewType) == null ? void 0 : _b.call(_a)) === "empty") target.detach();
+    if ((state == null ? void 0 : state.active) !== false) this.app.workspace.setActiveLeaf(existing, { focus: true });
+    if (state == null ? void 0 : state.eState) {
+      if (existing.isDeferred) await ((_c = existing.loadIfDeferred) == null ? void 0 : _c.call(existing));
+      existing.setEphemeralState(state.eState);
+    }
   }
 };
