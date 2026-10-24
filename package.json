@@ -1,0 +1,18 @@
+{
+  "name": "focus-existing-tab",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Focuses a note's existing tab instead of opening a duplicate.",
+  "main": "main.js",
+  "scripts": {
+    "build": "esbuild src/main.js --bundle --format=cjs --platform=browser --target=es2018 --log-level=warning --external:obsidian --external:electron --external:@codemirror/* --external:@lezer/* --outfile=main.js",
+    "dev": "npm run build -- --watch"
+  },
+  "author": "Chris Davison",
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "monkey-around": "^3.0.0",
+    "obsidian": "^1.14.4"
+  }
+}
