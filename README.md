@@ -1,6 +1,6 @@
 # Focus Existing Tab
 
-When you open a note that is already open in a tab, this plugin switches to that tab instead of opening a second copy.
+When you open a note that is already open in a tab, this plugin switches to that tab instead of opening a second copy. That includes tabs in other Obsidian windows of the same vault.
 
 It works however you open the note: clicking a link, the quick switcher, the file explorer, search results, bookmarks, or other plugins that open files the standard way. The check runs before the new tab is drawn, so you never see a duplicate tab appear and then close.
 
@@ -11,7 +11,8 @@ It works however you open the note: clicking a link, the quick switcher, the fil
 
 ## Behaviour
 
-- **Same tab group only.** It only looks for the note among the tabs in the group where the note would open. Splits and popout windows are separate tab groups, so you can still keep the same note side by side in two splits.
+- **Same tab group first, then other windows.** It looks for the note among the tabs in the group where the note would open. If it is not there, it switches to a tab for that note in any other window of the same vault, bringing that window forward. Splits in the current window remain separate tab groups, so you can still keep the same note side by side in two splits.
+- **Explicit new windows are left alone.** Choosing *Open in new window* opens the note in that new window even if it is already open elsewhere.
 - **Heading and block links are applied.** Opening `[[Note#Heading]]` or `[[Note#^block]]` switches to the existing tab and scrolls to the heading or block.
 - **The new tab is closed unseen.** When a link would open a new, empty tab, that tab is closed before it is drawn. When a link would replace the note in the current tab, the current tab is left as it is.
 - **Requests not to focus are respected.** If a command or plugin opens a note and explicitly asks not to activate it, the existing tab stays in the background.

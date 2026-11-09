@@ -68,6 +68,10 @@ var viewState = (leaf) => {
     return void 0;
   }
 };
+var newer = (current, leaf) => {
+  var _a, _b;
+  return !current || ((_a = leaf.activeTime) != null ? _a : 0) > ((_b = current.activeTime) != null ? _b : 0) ? leaf : current;
+};
 var FocusExistingTabPlugin = class extends import_obsidian.Plugin {
   onload() {
     const plugin = this;
@@ -83,25 +87,46 @@ var FocusExistingTabPlugin = class extends import_obsidian.Plugin {
       })
     );
   }
-  // Look only in the target's tab group, so splits can still show a note twice.
+  // Look in the target's tab group first, then in any other window. Splits in
+  // this window stay separate tab groups, so they can still show a note twice.
   // Any failure falls back to Obsidian's normal behaviour.
   findExisting(target, file) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e;
     try {
       if (typeof (file == null ? void 0 : file.path) !== "string" || !(target == null ? void 0 : target.parent)) return null;
       if (((_b = (_a = viewState(target)) == null ? void 0 : _a.state) == null ? void 0 : _b.file) === file.path) return null;
       const type = (_d = (_c = this.app.viewRegistry) == null ? void 0 : _c.getTypeByExtension) == null ? void 0 : _d.call(_c, file.extension);
-      let match = null;
+      const targetWindow = (_e = target.getContainer) == null ? void 0 : _e.call(target);
+      if (this.isEmptyPopout(target, targetWindow)) return null;
+      let sameGroup = null;
+      let otherWindow = null;
       this.app.workspace.iterateAllLeaves((leaf) => {
-        if (!match && leaf !== target && leaf.parent === target.parent && this.shows(leaf, file, type)) {
-          match = leaf;
+        var _a2;
+        if (leaf === target || !this.shows(leaf, file, type)) return;
+        if (leaf.parent === target.parent) {
+          sameGroup = newer(sameGroup, leaf);
+        } else if (((_a2 = leaf.getContainer) == null ? void 0 : _a2.call(leaf)) !== targetWindow) {
+          otherWindow = newer(otherWindow, leaf);
         }
       });
-      return match;
+      return sameGroup || otherWindow;
     } catch (error) {
       console.error("Focus Existing Tab:", error);
       return null;
     }
+  }
+  // A popout created by "Open in new window" starts with one empty leaf.
+  isEmptyPopout(target, container) {
+    var _a, _b;
+    if (!container || container === this.app.workspace.rootSplit) return false;
+    if (((_b = (_a = target.view) == null ? void 0 : _a.getViewType) == null ? void 0 : _b.call(_a)) !== "empty") return false;
+    let leaves = 0;
+    this.app.workspace.iterateAllLeaves((leaf) => {
+      var _a2;
+      if (((_a2 = leaf.getContainer) == null ? void 0 : _a2.call(leaf)) === container) leaves += 1;
+      return leaves > 1;
+    });
+    return leaves === 1;
   }
   // True when the leaf is a file view of this file, not a linked view such as
   // a local graph or backlinks pane that only tracks it.
