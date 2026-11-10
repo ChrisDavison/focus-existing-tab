@@ -1,6 +1,6 @@
 {
   "name": "focus-existing-tab",
-  "version": "0.2.1",
+  "version": "0.2.4",
   "private": true,
   "description": "Focuses a note's existing tab instead of opening a duplicate.",
   "main": "main.js",
