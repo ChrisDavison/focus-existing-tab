@@ -1,7 +1,7 @@
 {
   "id": "focus-existing-tab",
   "name": "Focus Existing Tab",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "minAppVersion": "1.5.0",
   "description": "Switch to a note's tab when it is already open instead of opening a duplicate, before the duplicate tab is shown.",
   "author": "Chris Davison",
