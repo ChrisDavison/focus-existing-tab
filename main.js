@@ -61,6 +61,24 @@ function around1(obj, method, createWrapper) {
 }
 
 // src/main.js
+var TEXT = {
+  en: {
+    searchScope: "Search scope",
+    scopes: {
+      "tab-group": "Current tab group only",
+      window: "Focused window only",
+      vault: "All windows and tab groups"
+    }
+  },
+  es: {
+    searchScope: "\xC1mbito de b\xFAsqueda",
+    scopes: {
+      "tab-group": "Solo el grupo de pesta\xF1as actual",
+      window: "Solo la ventana activa",
+      vault: "Todas las ventanas y grupos de pesta\xF1as"
+    }
+  }
+};
 var viewState = (leaf) => {
   try {
     return leaf.getViewState();
@@ -73,7 +91,12 @@ var newer = (current, leaf) => {
   return !current || ((_a = leaf.activeTime) != null ? _a : 0) > ((_b = current.activeTime) != null ? _b : 0) ? leaf : current;
 };
 var FocusExistingTabPlugin = class extends import_obsidian.Plugin {
-  onload() {
+  async onload() {
+    const saved = await this.loadData();
+    this.settings = {
+      scope: Object.keys(TEXT.en.scopes).includes(saved == null ? void 0 : saved.scope) ? saved.scope : "vault"
+    };
+    this.addSettingTab(new FocusExistingTabSettingTab(this.app, this));
     const plugin = this;
     this.register(
       around(import_obsidian.WorkspaceLeaf.prototype, {
@@ -87,9 +110,8 @@ var FocusExistingTabPlugin = class extends import_obsidian.Plugin {
       })
     );
   }
-  // Look in the target's tab group first, then in any other window. Splits in
-  // this window stay separate tab groups, so they can still show a note twice.
-  // Any failure falls back to Obsidian's normal behaviour.
+  // Prefer the target's tab group, then its window, then other windows,
+  // stopping at the configured scope. Any failure falls back to Obsidian.
   findExisting(target, file) {
     var _a, _b, _c, _d, _e;
     try {
@@ -99,17 +121,22 @@ var FocusExistingTabPlugin = class extends import_obsidian.Plugin {
       const targetWindow = (_e = target.getContainer) == null ? void 0 : _e.call(target);
       if (this.isEmptyPopout(target, targetWindow)) return null;
       let sameGroup = null;
+      let sameWindow = null;
       let otherWindow = null;
       this.app.workspace.iterateAllLeaves((leaf) => {
         var _a2;
         if (leaf === target || !this.shows(leaf, file, type)) return;
         if (leaf.parent === target.parent) {
           sameGroup = newer(sameGroup, leaf);
-        } else if (((_a2 = leaf.getContainer) == null ? void 0 : _a2.call(leaf)) !== targetWindow) {
+        } else if (this.settings.scope === "tab-group") {
+          return;
+        } else if (((_a2 = leaf.getContainer) == null ? void 0 : _a2.call(leaf)) === targetWindow) {
+          sameWindow = newer(sameWindow, leaf);
+        } else if (this.settings.scope === "vault") {
           otherWindow = newer(otherWindow, leaf);
         }
       });
-      return sameGroup || otherWindow;
+      return sameGroup || sameWindow || otherWindow;
     } catch (error) {
       console.error("Focus Existing Tab:", error);
       return null;
@@ -144,6 +171,32 @@ var FocusExistingTabPlugin = class extends import_obsidian.Plugin {
     if (state == null ? void 0 : state.eState) {
       if (existing.isDeferred) await ((_c = existing.loadIfDeferred) == null ? void 0 : _c.call(existing));
       existing.setEphemeralState(state.eState);
+    }
+  }
+};
+var FocusExistingTabSettingTab = class extends import_obsidian.PluginSettingTab {
+  constructor(app, plugin) {
+    super(app, plugin);
+    this.plugin = plugin;
+  }
+  display() {
+    var _a, _b;
+    const text = (_b = TEXT[(_a = import_obsidian.getLanguage) == null ? void 0 : _a().split("-")[0]]) != null ? _b : TEXT.en;
+    this.containerEl.empty();
+    this.containerEl.createEl("h2", { text: "Focus Existing Tab" });
+    const scope = this.containerEl.createEl("fieldset", { cls: "focus-existing-tab-scope" });
+    scope.createEl("legend", { text: text.searchScope });
+    for (const [value, label] of Object.entries(text.scopes)) {
+      const option = scope.createEl("label", { cls: "focus-existing-tab-scope-option" });
+      const radio = option.createEl("input", {
+        attr: { type: "radio", name: "focus-existing-tab-scope", value }
+      });
+      radio.checked = this.plugin.settings.scope === value;
+      option.createSpan({ text: label });
+      radio.addEventListener("change", async () => {
+        this.plugin.settings.scope = value;
+        await this.plugin.saveData(this.plugin.settings);
+      });
     }
   }
 };

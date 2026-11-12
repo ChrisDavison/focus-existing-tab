@@ -1,10 +1,11 @@
 {
   "name": "focus-existing-tab",
-  "version": "0.2.4",
+  "version": "0.3.0",
   "private": true,
   "description": "Focuses a note's existing tab instead of opening a duplicate.",
   "main": "main.js",
   "scripts": {
+    "test": "npm run build && node --test",
     "build": "esbuild src/main.js --bundle --format=cjs --platform=browser --target=es2018 --log-level=warning --external:obsidian --external:electron --external:@codemirror/* --external:@lezer/* --outfile=main.js",
     "dev": "npm run build -- --watch"
   },

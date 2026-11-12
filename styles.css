@@ -1,0 +1,32 @@
+.focus-existing-tab-scope {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.focus-existing-tab-scope legend {
+  margin-bottom: var(--size-4-3);
+  padding: 0;
+}
+
+.focus-existing-tab-scope-option {
+  display: flex;
+  align-items: center;
+  gap: var(--size-4-3);
+  width: 100%;
+  padding: var(--size-4-3);
+  border-radius: var(--radius-s);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+.focus-existing-tab-scope-option:has(input:checked) {
+  background: var(--background-secondary);
+}
+
+.focus-existing-tab-scope-option input {
+  flex-shrink: 0;
+  margin: 0;
+  accent-color: var(--interactive-accent);
+}

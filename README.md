@@ -11,7 +11,7 @@ It works however you open the note: clicking a link, the quick switcher, the fil
 
 ## Behaviour
 
-- **Same tab group first, then other windows.** It looks for the note among the tabs in the group where the note would open. If it is not there, it switches to a tab for that note in any other window of the same vault, bringing that window forward. Splits in the current window remain separate tab groups, so you can still keep the same note side by side in two splits.
+- **Choose the search scope.** In *Settings → Focus Existing Tab → Search scope*, choose *Current tab group only*, *Focused window only*, or *All windows and tab groups* (the default). The window and tab group are those where the note would open. The plugin checks that group first, then other groups in the same window, then other windows of the same vault, within your selected scope. When there is more than one match at the same level, it uses the most recently active tab. Use *Current tab group only* to keep the same note side by side in separate splits.
 - **Explicit new windows are left alone.** Choosing *Open in new window* opens the note in that new window even if it is already open elsewhere.
 - **Heading and block links are applied.** Opening `[[Note#Heading]]` or `[[Note#^block]]` switches to the existing tab and scrolls to the heading or block.
 - **The new tab is closed unseen.** When a link would open a new, empty tab, that tab is closed before it is drawn. When a link would replace the note in the current tab, the current tab is left as it is.
@@ -25,7 +25,7 @@ From Obsidian, open *Settings → Community plugins → Browse*, search for "Foc
 
 To try a release before it reaches the community plugin directory, install [BRAT](https://github.com/TfTHacker/obsidian42-brat), add the beta plugin `ChrisDavison/focus-existing-tab`, then enable Focus Existing Tab under *Settings → Community plugins*.
 
-You can also install it by hand: copy `main.js` and `manifest.json` from the [latest release](https://github.com/ChrisDavison/focus-existing-tab/releases/latest) into `<vault>/.obsidian/plugins/focus-existing-tab/`, then enable the plugin.
+You can also install it by hand: copy `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/ChrisDavison/focus-existing-tab/releases/latest) into `<vault>/.obsidian/plugins/focus-existing-tab/`, then enable the plugin.
 
 ## Limitations
 
@@ -37,9 +37,10 @@ The plugin wraps an internal method that Obsidian uses to open files in a tab, a
 npm install
 npm run build   # bundles src/main.js into main.js
 npm run dev     # rebuilds on change
+npm test        # builds and checks tab matching
 ```
 
-Copy `main.js` and `manifest.json` into a test vault's `.obsidian/plugins/focus-existing-tab/` folder and reload the plugin.
+Copy `main.js`, `manifest.json`, and `styles.css` into a test vault's `.obsidian/plugins/focus-existing-tab/` folder and reload the plugin.
 
 ## License
 
